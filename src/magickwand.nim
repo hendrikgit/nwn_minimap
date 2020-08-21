@@ -25,7 +25,7 @@ proc magickGetImageHeight(wand: ptr MagickWand): csize_t {.importc: "MagickGetIm
 proc newWand*(): Wand =
   result.impl = newMagickWand()
 
-proc `=destroy`*(wand: var Wand) =
+proc `=destroy`(wand: var Wand) =
   wand.impl = destroyMagickWand(wand.impl)
 
 proc readImage*(wand: Wand, filename: string) =
