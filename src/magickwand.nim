@@ -1,6 +1,8 @@
 type
   MagickWand {.importc: "struct MagickWand".} = object
 
+  PixelWand {.importc: "struct PixelWand".} = object
+
   Wand* = object
     impl: ptr MagickWand
 
@@ -20,6 +22,12 @@ proc magickWriteImage(wand: ptr MagickWand, filename: cstring): bool {.importc: 
 proc magickGetImageWidth(wand: ptr MagickWand): csize_t {.importc: "MagickGetImageWidth".}
 
 proc magickGetImageHeight(wand: ptr MagickWand): csize_t {.importc: "MagickGetImageHeight".}
+
+proc newPixelWand(): ptr PixelWand {.importc: "NewPixelWand".}
+
+proc destroyPixelWand(wand: ptr PixelWand): ptr PixelWand {.importc: "DestroyPixelWand".}
+
+proc magickRotateImage(wand: ptr MagickWand, background: ptr PixelWand, degrees: cdouble): bool {.importc: "MagickRotateImage".}
 {.pop.}
 
 proc newWand*(): Wand =
@@ -44,3 +52,9 @@ proc height*(wand: Wand): uint =
 
 proc size*(wand: Wand): tuple[width, height: uint] =
   (wand.width, wand.height)
+
+proc rotateImage*(wand: Wand, degrees: float64) =
+  var pw = newPixelWand()
+  # todo: use return code for error handling?
+  discard magickRotateImage(wand.impl, pw, degrees)
+  discard pw.destroyPixelWand
