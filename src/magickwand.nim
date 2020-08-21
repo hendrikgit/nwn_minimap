@@ -3,6 +3,9 @@ type
 
   PixelWand {.importc: "struct PixelWand".} = object
 
+  FilterType = enum
+    LanczosFilter
+
   Wand* = object
     impl: ptr MagickWand
 
@@ -28,6 +31,8 @@ proc newPixelWand(): ptr PixelWand {.importc: "NewPixelWand".}
 proc destroyPixelWand(wand: ptr PixelWand): ptr PixelWand {.importc: "DestroyPixelWand".}
 
 proc magickRotateImage(wand: ptr MagickWand, background: ptr PixelWand, degrees: cdouble): bool {.importc: "MagickRotateImage".}
+
+proc magickResizeImage(wand: ptr MagickWand, columns, rows: csize_t, filter: FilterType): bool {.importc: "MagickResizeImage".}
 {.pop.}
 
 proc newWand*(): Wand =
@@ -58,3 +63,7 @@ proc rotateImage*(wand: Wand, degrees: float64) =
   # todo: use return code for error handling?
   discard magickRotateImage(wand.impl, pw, degrees)
   discard pw.destroyPixelWand
+
+proc resizeImage*(wand: Wand, columns, rows: uint) =
+  # todo: return code?
+  discard magickResizeImage(wand.impl, columns, rows, LanczosFilter)
