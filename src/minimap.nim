@@ -1,7 +1,11 @@
-import os, tables, strutils
+import os, tables, sequtils, strutils
 import neverwinter/[erf, gff, key, resfile, resman]
 import regex
 #import magickwand
+
+type
+  Tile = tuple
+    id, orientation: int
 
 proc readTileTable(tileset: string): Table[int, string] =
   var currentTileNr = 0
@@ -41,6 +45,8 @@ proc main() =
       if not rm.contains(tilesetResRef):
         echo "Error: Tileset not found: " & tileset
       let tt = rm.demand(tilesetResRef).readAll.readTileTable
+      let tiles = are["Tile_List", GffList]
+        .mapIt (it.get("Tile_ID", GffInt).int, it.get("Tile_Orientation", GffInt).int)
 
 #genesis()
 main()
