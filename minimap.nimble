@@ -9,3 +9,4 @@ bin           = @["minimap"]
 # Dependencies
 requires "nim >= 1.2.6"
 requires "neverwinter == 1.3.1"
+requires "regex == 0.16.2"
