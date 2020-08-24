@@ -22,6 +22,8 @@ proc clearMagickWand(wand: ptr MagickWand) {.importc: "ClearMagickWand".}
 
 proc magickReadImage(wand: ptr MagickWand, filename: cstring): bool {.importc: "MagickReadImage".}
 
+proc magickReadImageBlob(wand: ptr MagickWand, blob: cstring, length: csize_t): bool {.importc: "MagickReadImageBlob".}
+
 proc magickWriteImage(wand: ptr MagickWand, filename: cstring): bool {.importc: "MagickWriteImage".}
 
 proc magickGetImageWidth(wand: ptr MagickWand): csize_t {.importc: "MagickGetImageWidth".}
@@ -57,6 +59,10 @@ proc clearWand*(wand: Wand) =
 proc readImage*(wand: Wand, filename: string) =
   if not magickReadImage(wand.impl, filename):
     raise newException(IOError, "Could not read image: " & filename)
+
+proc readImageBlob*(wand: Wand, blob: string) =
+  if not magickReadImageBlob(wand.impl, blob, blob.len.csize_t):
+    raise newException(ValueError, "Could not read image blob")
 
 proc writeImage*(wand: Wand, filename: string) =
   if not magickWriteImage(wand.impl, filename):
