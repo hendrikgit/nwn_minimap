@@ -9,7 +9,7 @@ type
   Wand* = object
     impl: ptr MagickWand
 
-{.push dynlib: "libMagickWand-6(.Q16).so(.6)".}
+{.push dynlib: "(./)libMagickWand-7(.Q16HDRI).so".}
 proc genesis*() {.importc: "MagickWandGenesis".}
 
 proc terminus*() {.importc: "MagickWandTerminus".}
