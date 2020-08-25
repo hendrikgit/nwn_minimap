@@ -47,7 +47,12 @@ proc magickAddImage(wand, addWand: ptr MagickWand): bool {.importc: "MagickAddIm
 proc magickResetIterator(wand: ptr MagickWand) {.importc: "MagickResetIterator".}
 
 proc magickGetIteratorIndex(wand: ptr MagickWand): int {.importc: "MagickGetIteratorIndex".}
+
+proc magickSetFormat(wand: ptr MagickWand, format: cstring): bool {.importc: "MagickSetFormat".}
 {.pop.}
+
+proc setFormat*(wand: Wand, format: string) =
+  discard magickSetFormat(wand.impl, format)
 
 proc newWand*(): Wand =
   result.impl = newMagickWand()
