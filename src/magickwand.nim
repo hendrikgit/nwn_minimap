@@ -26,6 +26,8 @@ proc magickReadImageBlob(wand: ptr MagickWand, blob: cstring, length: csize_t): 
 
 proc magickWriteImage(wand: ptr MagickWand, filename: cstring): bool {.importc: "MagickWriteImage".}
 
+proc magickGetImageBlob(wand: ptr MagickWand, length: var csize_t): ptr cuchar {.importc: "MagickGetImageBlob".}
+
 proc magickGetImageWidth(wand: ptr MagickWand): csize_t {.importc: "MagickGetImageWidth".}
 
 proc magickGetImageHeight(wand: ptr MagickWand): csize_t {.importc: "MagickGetImageHeight".}
@@ -67,6 +69,12 @@ proc readImageBlob*(wand: Wand, blob: string) =
 proc writeImage*(wand: Wand, filename: string) =
   if not magickWriteImage(wand.impl, filename):
     raise newException(IOError, "Could not write image: " & filename)
+
+proc getImageBlob*(wand: Wand): string =
+  var length: csize_t
+  var blobPtr = magickGetImageBlob(wand.impl, length)
+  result = newString(length)
+  copyMem(result.cstring, blobPtr, length)
 
 proc width*(wand: Wand): uint =
   magickGetImageWidth(wand.impl)
