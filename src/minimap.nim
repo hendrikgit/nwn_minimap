@@ -45,6 +45,7 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
   map = map.appendImages(true)
   try:
     map.writeImage(filename & ".tga")
+    echo "File written: " & filename & ".tga"
   except:
     echo "Error: Could not write image: " & filename & ".tga"
 
