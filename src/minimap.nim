@@ -15,7 +15,7 @@ proc readTileTable(tileset: string): Table[int, string] =
     elif l.startsWith("ImageMap2D="):
       result[currentTileNr] = l[11 .. ^1].toLowerAscii
 
-proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int, string], filename: string) =
+proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int, string], tileset, filename: string) =
   var map = newWand()
   var row = newWand()
   for h in 0 ..< height:
@@ -30,10 +30,10 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
           row.readImageBlob(tga)
           row.rotateImage(t.orientation * 90)
         else:
-          echo "Warning: tga not found: " & tgaName
+          echo "Warning: " & filename & ": " & tileset & ": tga not found: " & tgaName
           row.readImage("canvas:red")
       else:
-        echo "Warning: No tga (ImageMap2D entry) found for tile: " & $t.id
+        echo "Warning: " & filename & ": " & tileset & ": No tga (ImageMap2D entry) found for tile: " & $t.id
         row.readImage("canvas:red")
       if row.width < 16:
         row.resizeImage(16, 16)
@@ -63,23 +63,19 @@ proc main() =
 
   for c in rm.contents:
     if $c.resType == "are":
-      echo c
       let
         are = rm.demand(c).readAll.newStringStream.readGffRoot
         width = are["Width", GffInt].int
         height = are["Height", GffInt].int
         tileset = $are["Tileset", GffResRef]
         tilesetResRef = newResRef(tileset, "set".getResType)
-      echo are["Name", GffCExoLocString]
-      echo $width & "x" & $height
-      echo tileset
       if not rm.contains(tilesetResRef):
-        echo "Warning: Tileset not found: " & tileset
+        echo "Warning: " & $c & ": Tileset not found: " & tileset
         continue
       let tt = rm.demand(tilesetResRef).readAll.readTileTable
       let tiles = are["Tile_List", GffList]
         .mapIt (it.get("Tile_ID", GffInt).int, it.get("Tile_Orientation", GffInt).int)
-      generateMap(rm, tiles, width, height, tt, c.resRef)
+      generateMap(rm, tiles, width, height, tt, tileset, c.resRef)
 
 genesis()
 main()
