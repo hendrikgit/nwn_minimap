@@ -44,7 +44,10 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
   map.resetIterator
   map = map.appendImages(true)
   map.setFormat("JPG")
-  map.writeImage(filename & ".jpg")
+  try:
+    map.writeImage(filename & ".jpg")
+  except:
+    echo "Error: Could not write image: " & filename & ".jpg"
 
 proc main() =
   let rm = newResMan()
