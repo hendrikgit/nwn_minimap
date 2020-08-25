@@ -1,7 +1,7 @@
 import os, tables, sequtils, strutils
 import neverwinter/[erf, gff, key, resfile, resman]
 import regex
-#import magickwand
+import magickwand
 
 type
   Tile = tuple
@@ -14,6 +14,33 @@ proc readTileTable(tileset: string): Table[int, string] =
       currentTileNr = l[5 .. ^2].parseInt
     elif l.startsWith("ImageMap2D="):
       result[currentTileNr] = l[11 .. ^1].toLowerAscii
+
+proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int, string], filename: string) =
+  var map = newWand()
+  var row = newWand()
+  for h in 0 ..< height:
+    row.setFormat("TGA") # otherwise tga blobs can not be recognized
+    for w in 0 ..< width:
+      let
+        t = tiles[h * width + w]
+        tgaName = tt[t.id]
+        tgaResRef = newResRef(tgaName, "tga".getResType)
+      if not rm.contains(tgaResRef):
+        echo "Error: tga not found: " & tgaName
+        quit(QuitFailure)
+      let tga = rm.demand(tgaResRef).readAll
+      row.readImageBlob(tga)
+      row.rotateImage(t.orientation * 90)
+      if row.width < 16:
+        row.resizeImage(16, 16)
+    row.resetIterator
+    row = row.appendImages
+    map.addImage(row)
+    row.clearWand
+  map.resetIterator
+  map = map.appendImages(true)
+  map.setFormat("JPG")
+  map.writeImage(filename & ".jpg")
 
 proc main() =
   let rm = newResMan()
@@ -44,10 +71,12 @@ proc main() =
       echo tileset
       if not rm.contains(tilesetResRef):
         echo "Error: Tileset not found: " & tileset
+        quit(QuitFailure)
       let tt = rm.demand(tilesetResRef).readAll.readTileTable
       let tiles = are["Tile_List", GffList]
         .mapIt (it.get("Tile_ID", GffInt).int, it.get("Tile_Orientation", GffInt).int)
+      generateMap(rm, tiles, width, height, tt, c.resRef)
 
-#genesis()
+genesis()
 main()
-#terminus()
+terminus()
