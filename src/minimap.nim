@@ -28,7 +28,12 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
           let tgaResRef = newResRef(tgaName, "tga".getResType)
           if rm.contains(tgaResRef):
             let tga = rm.demand(tgaResRef).readAll
-            row.readImageBlob(tga)
+            try:
+              row.readImageBlob(tga)
+            except:
+              echo "Error: " & filename & ": " & tileset & ": could not read tga: " & tgaName
+              echo "The tga file might be empty if it is from the nwserver key/bif."
+              row.readImage("canvas:red")
             row.rotateImage(t.orientation * 90)
           else:
             echo "Warning: " & filename & ": " & tileset & ": tga not found: " & tgaName
