@@ -22,18 +22,22 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
     row.setFormat("TGA") # otherwise tga blobs can not be recognized
     for w in 0 ..< width:
       let t = tiles[h * width + w]
-      let tgaName = tt[t.id]
-      if tgaName.len > 0:
-        let tgaResRef = newResRef(tgaName, "tga".getResType)
-        if rm.contains(tgaResRef):
-          let tga = rm.demand(tgaResRef).readAll
-          row.readImageBlob(tga)
-          row.rotateImage(t.orientation * 90)
+      if t.id in tt:
+        let tgaName = tt[t.id]
+        if tgaName.len > 0:
+          let tgaResRef = newResRef(tgaName, "tga".getResType)
+          if rm.contains(tgaResRef):
+            let tga = rm.demand(tgaResRef).readAll
+            row.readImageBlob(tga)
+            row.rotateImage(t.orientation * 90)
+          else:
+            echo "Warning: " & filename & ": " & tileset & ": tga not found: " & tgaName
+            row.readImage("canvas:red")
         else:
-          echo "Warning: " & filename & ": " & tileset & ": tga not found: " & tgaName
+          echo "Warning: " & filename & ": " & tileset & ": No tga (ImageMap2D entry) found for tile: " & $t.id
           row.readImage("canvas:red")
       else:
-        echo "Warning: " & filename & ": " & tileset & ": No tga (ImageMap2D entry) found for tile: " & $t.id
+        echo "Warning: " & filename & ": " & tileset & ": tile not found: " & $t.id
         row.readImage("canvas:red")
       if row.width < 16:
         row.resizeImage(16, 16)
@@ -50,19 +54,23 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
     echo "Error: Could not write image: " & filename & ".tga"
 
 proc main() =
+  if paramCount() == 0:
+    echo """As parameters please provide paths to files of type are, hak, mod or key.
+Add nwn_base.key and your tilest haks or the output maps won't be complete (showing red tiles)."""
+
   let rm = newResMan()
-  for p in commandLineParams():
-    let ext = p.splitFile.ext
-    case ext
-    of ".are":
-      rm.add newResFile(p)
-    of ".hak":
-      rm.add p.openFileStream.readErf(p)
-    of ".key":
-      let dir = p.splitFile.dir
-      rm.add p.openFileStream.readKeyTable(label = p, proc (fn: string): Stream =
-        joinPath(dir, fn.splitPath.tail).openFileStream
-      )
+  # load key/bif first, then mod, hak, single are files
+  for p in commandLineParams().filterIt it.endsWith(".key"):
+    let dir = p.splitFile.dir
+    rm.add p.openFileStream.readKeyTable(label = p, proc (fn: string): Stream =
+      joinPath(dir, fn.splitPath.tail).openFileStream
+    )
+  for p in commandLineParams().filterIt it.endsWith(".mod"):
+    rm.add p.openFileStream.readErf(p)
+  for p in commandLineParams().filterIt it.endsWith(".hak"):
+    rm.add p.openFileStream.readErf(p)
+  for p in commandLineParams().filterIt it.endsWith(".are"):
+    rm.add newResFile(p)
 
   for c in rm.contents:
     if $c.resType == "are":
