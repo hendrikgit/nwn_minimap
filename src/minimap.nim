@@ -21,16 +21,20 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
   for h in 0 ..< height:
     row.setFormat("TGA") # otherwise tga blobs can not be recognized
     for w in 0 ..< width:
-      let
-        t = tiles[h * width + w]
-        tgaName = tt[t.id]
-        tgaResRef = newResRef(tgaName, "tga".getResType)
-      if not rm.contains(tgaResRef):
-        echo "Error: tga not found: " & tgaName
-        quit(QuitFailure)
-      let tga = rm.demand(tgaResRef).readAll
-      row.readImageBlob(tga)
-      row.rotateImage(t.orientation * 90)
+      let t = tiles[h * width + w]
+      let tgaName = tt[t.id]
+      if tgaName.len > 0:
+        let tgaResRef = newResRef(tgaName, "tga".getResType)
+        if rm.contains(tgaResRef):
+          let tga = rm.demand(tgaResRef).readAll
+          row.readImageBlob(tga)
+          row.rotateImage(t.orientation * 90)
+        else:
+          echo "Warning: tga not found: " & tgaName
+          row.readImage("canvas:red")
+      else:
+        echo "Warning: No tga (ImageMap2D entry) found for tile: " & $t.id
+        row.readImage("canvas:red")
       if row.width < 16:
         row.resizeImage(16, 16)
     row.resetIterator
@@ -70,8 +74,8 @@ proc main() =
       echo $width & "x" & $height
       echo tileset
       if not rm.contains(tilesetResRef):
-        echo "Error: Tileset not found: " & tileset
-        quit(QuitFailure)
+        echo "Warning: Tileset not found: " & tileset
+        continue
       let tt = rm.demand(tilesetResRef).readAll.readTileTable
       let tiles = are["Tile_List", GffList]
         .mapIt (it.get("Tile_ID", GffInt).int, it.get("Tile_Orientation", GffInt).int)
