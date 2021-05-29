@@ -35,7 +35,10 @@ proc generateMap(rm: ResMan, tiles: seq[Tile], width, height: int, tt: Table[int
               tileTga = tgaData.readTga
             except:
               echo "Error: " & filename & ": " & tileset & ": could not read tga: " & tgaName
-              echo "The tga file might be empty if it is from the nwserver key/bif or in an unsupported format."
+              echo "TGA size: " & $tgaData.len
+              echo "The tga file might be empty if it is from the nwserver key/bif."
+              let e = getCurrentException()
+              echo "Exception: \"" & $e.name & "\": with message: " & e.msg
               tileTga = errorTga
             if t.orientation == 1: tileTga = tileTga.rotate90cw.rotate90cw.rotate90cw
             elif t.orientation == 2: tileTga = tileTga.rotate90cw.rotate90cw
