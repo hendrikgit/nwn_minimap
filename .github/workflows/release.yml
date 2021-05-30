@@ -1,0 +1,176 @@
+name: Create a release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-linux-win:
+    runs-on: ubuntu-20.04
+    env:
+      NIMVER: "1.4.8"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache nim install and nimble packages
+      # nim is installed to .nimble/bin/nim by choosenim
+        uses: actions/cache@v2
+        id: cache
+        with:
+          key: build-${{ runner.os }}-nim-${{ env.NIMVER }}
+          path: |
+            ~/.choosenim
+            ~/.nimble
+
+      - name: Install apt packages
+        run: sudo apt-get install -y --no-install-recommends mingw-w64
+
+      - name: Install nim
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl https://nim-lang.org/choosenim/init.sh -o choosenim-init.sh
+          sh choosenim-init.sh -y
+          PATH="~/.nimble/bin:$PATH" choosenim $NIMVER
+
+      - name: Install nimble packages
+        run: PATH="~/.nimble/bin:$PATH" nimble install --depsOnly -y
+
+      - name: Compile for Windows
+        run: |
+          PATH="~/.nimble/bin:$PATH" nimble build -d:mingw -d:release
+          ls -l minimap.exe
+          file minimap.exe
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: minimap.windows
+          path: minimap.exe
+
+      - name: Compile for Linux
+        run: |
+          PATH="~/.nimble/bin:$PATH" nimble build -d:release
+          ls -l minimap
+          file minimap
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: minimap.linux
+          path: minimap
+
+  build-macos:
+    runs-on: macos-latest
+    env:
+      NIMVER: "1.4.8"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Cache nim install and nimble packages
+      # nim is installed to .nimble/bin/nim by choosenim
+        uses: actions/cache@v2
+        id: cache
+        with:
+          key: build-${{ runner.os }}-nim-${{ env.NIMVER }}
+          path: |
+            ~/.choosenim
+            ~/.nimble
+
+      - name: Install nim
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          curl https://nim-lang.org/choosenim/init.sh -o choosenim-init.sh
+          sh choosenim-init.sh -y
+          PATH="~/.nimble/bin:$PATH" choosenim $NIMVER
+
+      - name: Install nimble packages
+        run: PATH="~/.nimble/bin:$PATH" nimble install --depsOnly -y
+
+      - name: Compile for macOS
+        run: |
+          PATH="~/.nimble/bin:$PATH" nimble build -d:release
+          ls -l minimap
+          file minimap
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: minimap.macos
+          path: minimap
+
+  release:
+    needs: [build-linux-win, build-macos]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: minimap.linux
+
+      - name: Pack Linux artifact
+        # the executable flag is removed on artifact upload
+        run: |
+          chmod +x minimap
+          zip minimap.linux.zip minimap
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: minimap.windows
+
+      - name: Pack Windows artifact
+        run: zip minimap.windows.zip minimap.exe
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: minimap.macos
+
+      - name: Pack macOS artifact
+        run: |
+          chmod +x minimap
+          zip minimap.macos.zip minimap
+
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: minimap.linux.zip
+          asset_name: minimap.linux.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: minimap.macos.zip
+          asset_name: minimap.macos.zip
+          asset_content_type: application/zip
+
+      - name: Upload Windows release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: minimap.windows.zip
+          asset_name: minimap.windows.zip
+          asset_content_type: application/zip
