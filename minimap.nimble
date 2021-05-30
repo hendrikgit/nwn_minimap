@@ -10,4 +10,4 @@ bin           = @["minimap"]
 requires "nim >= 1.2.6"
 requires "neverwinter == 1.3.1"
 requires "regex == 0.16.2"
-requires "https://github.com/hendrikgit/nimtga"
+requires "https://github.com/hendrikgit/nimtga#0.2.0"
