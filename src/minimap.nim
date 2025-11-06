@@ -10,7 +10,7 @@ type
 proc readTileTable(tileset: string): Table[int, string] =
   var currentTileNr = 0
   for l in tileset.splitLines:
-    if l.match(re"\[TILE\d+\]"):
+    if l.match(re2"\[TILE\d+\]"):
       currentTileNr = l[5 .. ^2].parseInt
     elif l.startsWith("ImageMap2D="):
       result[currentTileNr] = l[11 .. ^1].toLowerAscii
@@ -75,9 +75,8 @@ Add nwn_base.key and your tilest haks or the output maps won't be complete (show
 let rm = newResMan()
 # load key/bif first, then mod, hak, single are files
 for p in commandLineParams().filterIt it.endsWith(".key"):
-  let dir = p.splitFile.dir
-  rm.add p.openFileStream.readKeyTable(label = p, proc (fn: string): Stream =
-    joinPath(dir, fn.splitPath.tail).openFileStream
+  rm.add p.openFileStream.readKeyTable(label = p, proc (fn: string): Stream {.gcsafe.} =
+    joinPath(p.splitFile.dir, fn.splitPath.tail).openFileStream
   )
 for p in commandLineParams().filterIt it.endsWith(".mod"):
   rm.add p.openFileStream.readErf(p)
