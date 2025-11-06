@@ -73,17 +73,17 @@ if paramCount() == 0:
 Add nwn_base.key and your tilest haks or the output maps won't be complete (showing red tiles)."""
 
 let rm = newResMan()
-# load key/bif first, then mod, hak, single are files
-for p in commandLineParams().filterIt it.endsWith(".key"):
-  rm.add p.openFileStream.readKeyTable(label = p, proc (fn: string): Stream {.gcsafe.} =
-    joinPath(p.splitFile.dir, fn.splitPath.tail).openFileStream
-  )
+# load single are files first, then mod, hak, key/bif
+for p in commandLineParams().filterIt it.endsWith(".are"):
+  rm.add newResFile(p)
 for p in commandLineParams().filterIt it.endsWith(".mod"):
   rm.add p.openFileStream.readErf(p)
 for p in commandLineParams().filterIt it.endsWith(".hak"):
   rm.add p.openFileStream.readErf(p)
-for p in commandLineParams().filterIt it.endsWith(".are"):
-  rm.add newResFile(p)
+for p in commandLineParams().filterIt it.endsWith(".key"):
+  rm.add p.openFileStream.readKeyTable(label = p, proc (fn: string): Stream {.gcsafe.} =
+    joinPath(p.splitFile.dir, fn.splitPath.tail).openFileStream
+  )
 
 for c in rm.contents:
   if $c.resType == "are":
